@@ -2,7 +2,11 @@
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using BlowFishCS;
+using System.Linq;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Parameters;
 
 namespace LeagueReplayReader.Types
 {
@@ -47,37 +51,66 @@ namespace LeagueReplayReader.Types
 
         public byte[] GetDecryptedData(Replay p_replay)
         {
-            BlowFish b1 = new BlowFish(Convert.ToString(p_replay.PayloadHeader.GameId));
-            byte[] key = b1.Decrypt_ECB(p_replay.PayloadHeader.EncryptionKey);
+            // string represenation of the game id
+            string gameId = Convert.ToString(p_replay.PayloadHeader.GameId);
 
-            BlowFish b2 = new BlowFish(key);
+            BufferedBlockCipher blowfish = new BufferedBlockCipher(new BlowfishEngine());
+            blowfish.Init(false, new KeyParameter(Encoding.UTF8.GetBytes(gameId)));
 
-            return DecompressBytes(b2.Decrypt_ECB(m_data));
+            // obtaining the chunk encryption key
+            byte[] chunkEncryptionKey = blowfish.ProcessBytes(p_replay.PayloadHeader.EncryptionKey);
+
+            // padding length to remove
+            int paddingLength = Convert.ToInt32(chunkEncryptionKey[chunkEncryptionKey.Length - 1]);
+
+            // adjusted encryption key
+            chunkEncryptionKey = chunkEncryptionKey.Take(chunkEncryptionKey.Length - paddingLength).ToArray();
+
+            BufferedBlockCipher blowfish2 = new BufferedBlockCipher(new BlowfishEngine());
+            blowfish2.Init(false, new KeyParameter(chunkEncryptionKey));
+
+            // obtaining the decrypted chunk
+            byte[] decryptedChunk = blowfish2.ProcessBytes(m_data);
+
+            // padding length to remove
+            int paddingLength2 = Convert.ToInt32(decryptedChunk[decryptedChunk.Length - 1]);
+
+            // adjusted decrypted chunk
+            decryptedChunk = decryptedChunk.Take(decryptedChunk.Length - paddingLength2).ToArray();
+
+            return DecompressBytes(decryptedChunk);
         }
 
         private byte[] DecompressBytes(byte[] p_data)
         {
-            byte[] decompressedData = null;
-
-            using (MemoryStream outputStream = new MemoryStream())
+            using (GZipStream stream = new GZipStream(new MemoryStream(p_data), CompressionMode.Decompress))
             {
-                using (MemoryStream inputStream = new MemoryStream(p_data))
+                const int size = 4096;
+                byte[] buffer = new byte[size];
+
+                using (MemoryStream memory = new MemoryStream())
                 {
-                    using (GZipStream zip = new GZipStream(inputStream, CompressionMode.Decompress))
+                    int count = 0;
+
+                    do
                     {
-                        zip.CopyTo(outputStream);
+                        count = stream.Read(buffer, 0, size);
+
+                        if (count > 0)
+                        {
+                            memory.Write(buffer, 0, count);
+                        }
                     }
+                    while (count > 0);
+
+                    return memory.ToArray();
                 }
-
-                decompressedData = outputStream.ToArray();
             }
-
-            return decompressedData;
         }
 
         public override string ToString()
         {
-            return string.Format("<ReplayPayloadEntry id={0} type={1} len={2}", m_id, Type, m_length);
+            return string.Format("<ReplayPayloadEntry id={0} type={1} len={2}>", m_id, Type, m_length);
         }
 
         #endregion

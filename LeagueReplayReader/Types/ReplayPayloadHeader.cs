@@ -30,7 +30,7 @@ namespace LeagueReplayReader.Types
                 m_startGameChunkId = r.ReadInt32();
                 m_keyframeInterval = r.ReadInt32();
                 m_encryptionKeyLength = r.ReadInt16();
-                m_encryptionKey = r.ReadBytes(m_encryptionKeyLength);
+                m_encryptionKey = Convert.FromBase64String(Encoding.UTF8.GetString(r.ReadBytes(m_encryptionKeyLength)));
             }
         }
 
