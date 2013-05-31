@@ -29,7 +29,6 @@ namespace LeagueReplayReader
             while (replay.ReadEntry())
             {
                 Console.WriteLine("{0}: {1}, {2}, {3}, {4}", replay.PayloadEntry.ID, replay.PayloadEntry.Length, replay.PayloadEntry.NextChunkID, replay.PayloadEntry.Offset, replay.PayloadEntry.Type);
-                Console.WriteLine("{0}: {1}", replay.PayloadEntry.ID, replay.PayloadEntry.Data.Length.ToString());
             }
         }
     }

@@ -31,7 +31,7 @@ namespace LeagueReplayReader.Types
             m_payloadHeader = new ReplayPayloadHeader(m_stream);
 
             // set state vars
-            m_currentEntry = int.MinValue;
+            m_currentEntry = 0;
             m_entryDataOffset = m_header.PayloadOffset + (17 * (m_payloadHeader.ChunkCount + m_payloadHeader.KeyframeCount));
         }
 
@@ -40,21 +40,14 @@ namespace LeagueReplayReader.Types
             // make sure we have no read beyond the bounds of the entry data
             if (m_currentEntry < (m_payloadHeader.ChunkCount + m_payloadHeader.KeyframeCount))
             {
-                // set the current entry index
-                if (m_currentEntry < 0)
-                {
-                    m_currentEntry = 0;
-                }
-                else
-                {
-                    m_currentEntry++;
-                }
-
                 // seek to this entry's starting offset
                 m_stream.Seek(m_header.PayloadOffset + (17 * m_currentEntry), SeekOrigin.Begin);
 
                 // read out the payload entry
                 m_payloadEntry = new ReplayPayloadEntry(m_stream, m_entryDataOffset);
+
+                // set the current entry index
+                m_currentEntry++;
 
                 return true;
             }
