@@ -27,13 +27,13 @@ namespace LeagueReplayReader.Types
             }
 
             // seek to the entry's data location
-            p_stream.Seek(p_payloadDataStartOffset + m_offset, SeekOrigin.Begin);
+            // p_stream.Seek(p_payloadDataStartOffset + m_offset, SeekOrigin.Begin);
 
             // init the byte array to appropriate length
             m_data = new byte[m_length];
 
             // the entry data chunk
-            p_stream.Read(m_data, 0, m_length);
+            // p_stream.Read(m_data, 0, m_length);
         }
 
         #endregion
