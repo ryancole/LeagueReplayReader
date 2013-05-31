@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
+using BlowFishCS;
 
 namespace LeagueReplayReader.Types
 {
@@ -43,6 +45,36 @@ namespace LeagueReplayReader.Types
             p_stream.Read(m_data, 0, m_length);
         }
 
+        public byte[] GetDecryptedData(Replay p_replay)
+        {
+            BlowFish b1 = new BlowFish(Convert.ToString(p_replay.PayloadHeader.GameId));
+            byte[] key = b1.Decrypt_ECB(p_replay.PayloadHeader.EncryptionKey);
+
+            BlowFish b2 = new BlowFish(key);
+
+            return DecompressBytes(b2.Decrypt_ECB(m_data));
+        }
+
+        private byte[] DecompressBytes(byte[] p_data)
+        {
+            byte[] decompressedData = null;
+
+            using (MemoryStream outputStream = new MemoryStream())
+            {
+                using (MemoryStream inputStream = new MemoryStream(p_data))
+                {
+                    using (GZipStream zip = new GZipStream(inputStream, CompressionMode.Decompress))
+                    {
+                        zip.CopyTo(outputStream);
+                    }
+                }
+
+                decompressedData = outputStream.ToArray();
+            }
+
+            return decompressedData;
+        }
+
         public override string ToString()
         {
             return string.Format("<ReplayPayloadEntry id={0} type={1} len={2}", m_id, Type, m_length);
@@ -51,14 +83,6 @@ namespace LeagueReplayReader.Types
         #endregion
 
         #region Properties
-
-        public byte[] Data
-        {
-            get
-            {
-                return m_data;
-            }
-        }
 
         public int ID
         {

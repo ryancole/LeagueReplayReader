@@ -15,7 +15,7 @@ namespace LeagueReplayReader.Types
         private int m_payloadHeaderOffset;
         private int m_payloadHeaderLength;
         private int m_payloadOffset;
-        private string m_json;
+        private ReplayMetadata m_metadata;
 
         #region Methods
 
@@ -39,7 +39,7 @@ namespace LeagueReplayReader.Types
                 m_payloadOffset = r.ReadInt32();
 
                 // json metadata
-                m_json = Encoding.UTF8.GetString(r.ReadBytes(m_metadataLength));
+                m_metadata = ReplayMetadata.Deserialize(r.ReadBytes(m_metadataLength));
             }
         }
 
@@ -92,11 +92,11 @@ namespace LeagueReplayReader.Types
             }
         }
 
-        public string JSON
+        public ReplayMetadata Metadata
         {
             get
             {
-                return m_json;
+                return m_metadata;
             }
         }
 
