@@ -9,6 +9,10 @@ namespace LeagueReplayReader.Types
         private string m_path;
         private FileStream m_stream;
         private ReplayHeader m_header;
+        private ReplayPayloadHeader m_payloadHeader;
+        private ReplayPayloadEntry m_payloadEntry;
+        private int m_currentEntry;
+        private int m_entryDataOffset;
 
         #region Methods
 
@@ -22,6 +26,40 @@ namespace LeagueReplayReader.Types
 
             // instanciate the replay file header
             m_header = new ReplayHeader(m_stream);
+
+            // instanciate the replay file payload header
+            m_payloadHeader = new ReplayPayloadHeader(m_stream);
+
+            // set state vars
+            m_currentEntry = int.MinValue;
+            m_entryDataOffset = m_header.PayloadOffset + (17 * (m_payloadHeader.ChunkCount + m_payloadHeader.KeyframeCount));
+        }
+
+        public bool ReadEntry()
+        {
+            // make sure we have no read beyond the bounds of the entry data
+            if (m_currentEntry < (m_payloadHeader.ChunkCount + m_payloadHeader.KeyframeCount))
+            {
+                // set the current entry index
+                if (m_currentEntry < 0)
+                {
+                    m_currentEntry = 0;
+                }
+                else
+                {
+                    m_currentEntry++;
+                }
+
+                // seek to this entry's starting offset
+                m_stream.Seek(m_header.PayloadOffset + (17 * m_currentEntry), SeekOrigin.Begin);
+
+                // read out the payload entry
+                m_payloadEntry = new ReplayPayloadEntry(m_stream, m_entryDataOffset);
+
+                return true;
+            }
+
+            return false;
         }
 
         #endregion
@@ -41,6 +79,22 @@ namespace LeagueReplayReader.Types
             get
             {
                 return m_header;
+            }
+        }
+
+        public ReplayPayloadHeader PayloadHeader
+        {
+            get
+            {
+                return m_payloadHeader;
+            }
+        }
+
+        public ReplayPayloadEntry PayloadEntry
+        {
+            get
+            {
+                return m_payloadEntry;
             }
         }
 

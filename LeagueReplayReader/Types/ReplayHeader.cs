@@ -8,7 +8,7 @@ namespace LeagueReplayReader.Types
     {
         private byte[] m_magic;
         private byte[] m_signature;
-        private ushort m_headerLength;
+        private short m_headerLength;
         private int m_fileLength;
         private int m_metadataOffset;
         private int m_metadataLength;
@@ -30,7 +30,7 @@ namespace LeagueReplayReader.Types
                 m_signature = r.ReadBytes(256);
 
                 // various lengths and offsets
-                m_headerLength = r.ReadUInt16();
+                m_headerLength = r.ReadInt16();
                 m_fileLength = r.ReadInt32();
                 m_metadataOffset = r.ReadInt32();
                 m_metadataLength = r.ReadInt32();
@@ -46,6 +46,14 @@ namespace LeagueReplayReader.Types
         #endregion
 
         #region Properties
+
+        public int PayloadOffset
+        {
+            get
+            {
+                return m_payloadOffset;
+            }
+        }
 
         public byte[] Magic
         {
