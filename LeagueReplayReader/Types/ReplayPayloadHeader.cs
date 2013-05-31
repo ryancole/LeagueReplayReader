@@ -34,6 +34,11 @@ namespace LeagueReplayReader.Types
             }
         }
 
+        public override string ToString()
+        {
+            return string.Format("<ReplayPayloadHeader gameId={0} gameLen={1} keyframes={2} chunks={3}>", m_gameId, m_gameLength, m_keyframeCount, m_chunkCount);
+        }
+
         #endregion
 
         #region Properties

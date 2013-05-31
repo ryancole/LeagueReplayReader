@@ -55,11 +55,16 @@ namespace LeagueReplayReader.Types
             return false;
         }
 
+        public override string ToString()
+        {
+            return string.Format("<Replay {0}>", Path.GetFileName(m_path));
+        }
+
         #endregion
 
         #region Properties
 
-        public string Path
+        public string FilePath
         {
             get
             {

@@ -43,6 +43,11 @@ namespace LeagueReplayReader.Types
             }
         }
 
+        public override string ToString()
+        {
+            return string.Format("<ReplayHeader mo={0} ml={1} pho={2} phl={3} po={4}>", m_metadataOffset, m_metadataLength, m_payloadHeaderOffset, m_payloadHeaderLength, m_payloadOffset);
+        }
+
         #endregion
 
         #region Properties

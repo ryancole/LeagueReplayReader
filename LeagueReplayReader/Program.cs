@@ -25,10 +25,14 @@ namespace LeagueReplayReader
             // instanciate the replay file
             Replay replay = new Replay(filepath);
 
+            Console.WriteLine(replay);
+            Console.WriteLine(replay.Header);
+            Console.WriteLine(replay.PayloadHeader);
+
             // handle the entries within the replay file
             while (replay.ReadEntry())
             {
-                Console.WriteLine("{0}: {1}, {2}, {3}, {4}", replay.PayloadEntry.ID, replay.PayloadEntry.Length, replay.PayloadEntry.NextChunkID, replay.PayloadEntry.Offset, replay.PayloadEntry.Type);
+                Console.WriteLine(replay.PayloadEntry);
             }
         }
     }

@@ -4,6 +4,13 @@ using System.Text;
 
 namespace LeagueReplayReader.Types
 {
+    public enum ReplayPayloadEntryType
+    {
+        Chunk,
+        Keyframe,
+        Unknown
+    }
+
     public class ReplayPayloadEntry
     {
         private int m_id;
@@ -36,6 +43,11 @@ namespace LeagueReplayReader.Types
             p_stream.Read(m_data, 0, m_length);
         }
 
+        public override string ToString()
+        {
+            return string.Format("<ReplayPayloadEntry id={0} type={1} len={2}", m_id, Type, m_length);
+        }
+
         #endregion
 
         #region Properties
@@ -56,11 +68,20 @@ namespace LeagueReplayReader.Types
             }
         }
 
-        public byte Type
+        public ReplayPayloadEntryType Type
         {
             get
             {
-                return m_type;
+                if (m_type == 1)
+                {
+                    return ReplayPayloadEntryType.Chunk;
+                }
+                else if (m_type == 2)
+                {
+                    return ReplayPayloadEntryType.Keyframe;
+                }
+
+                return ReplayPayloadEntryType.Unknown;
             }
         }
 
