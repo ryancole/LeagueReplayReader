@@ -27,13 +27,13 @@ namespace LeagueReplayReader
 
             Console.WriteLine(replay);
             Console.WriteLine(replay.Header);
+            Console.WriteLine(replay.Header.Metadata);
             Console.WriteLine(replay.PayloadHeader);
-            Console.WriteLine(replay.Header.Metadata.gameId);
 
             // handle the entries within the replay file
             while (replay.ReadEntry())
             {
-                // decrypt the payload entry data
+                // decrypt and decompress the payload entry data
                 byte[] data = replay.PayloadEntry.GetDecryptedData(replay);
 
                 File.WriteAllBytes(string.Format(@"c:\users\ryan\desktop\foo\{0}_{1}.txt", replay.PayloadEntry.ID, replay.PayloadEntry.Type), data);

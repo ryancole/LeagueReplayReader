@@ -57,7 +57,7 @@ namespace LeagueReplayReader.Types
 
         public override string ToString()
         {
-            return string.Format("<Replay {0}>", Path.GetFileName(m_path));
+            return string.Format("<Replay file={0}>", Path.GetFileName(m_path));
         }
 
         #endregion

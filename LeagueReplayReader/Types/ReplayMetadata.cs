@@ -10,6 +10,15 @@ namespace LeagueReplayReader.Types
     {
         private int m_gameId;
 
+        #region Methods
+
+        public override string ToString()
+        {
+            return string.Format("<ReplayMetadata gid={0}>", m_gameId);
+        }
+
+        #endregion
+
         #region Static Functions
 
         public static ReplayMetadata Deserialize(byte[] p_json)

@@ -110,7 +110,7 @@ namespace LeagueReplayReader.Types
 
         public override string ToString()
         {
-            return string.Format("<ReplayPayloadEntry id={0} type={1} len={2}>", m_id, Type, m_length);
+            return string.Format("<ReplayPayloadEntry id={0} type={1} len={2} next={3}>", m_id, Type, m_length, m_nextChunkId);
         }
 
         #endregion
