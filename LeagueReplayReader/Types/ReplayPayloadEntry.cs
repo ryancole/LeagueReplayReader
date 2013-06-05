@@ -54,31 +54,34 @@ namespace LeagueReplayReader.Types
             // string represenation of the game id
             string gameId = Convert.ToString(p_replay.PayloadHeader.GameId);
 
-            BufferedBlockCipher blowfish = new BufferedBlockCipher(new BlowfishEngine());
-            blowfish.Init(false, new KeyParameter(Encoding.UTF8.GetBytes(gameId)));
-
             // obtaining the chunk encryption key
-            byte[] chunkEncryptionKey = blowfish.ProcessBytes(p_replay.PayloadHeader.EncryptionKey);
-
-            // padding length to remove
-            int paddingLength = Convert.ToInt32(chunkEncryptionKey[chunkEncryptionKey.Length - 1]);
-
-            // adjusted encryption key
-            chunkEncryptionKey = chunkEncryptionKey.Take(chunkEncryptionKey.Length - paddingLength).ToArray();
-
-            BufferedBlockCipher blowfish2 = new BufferedBlockCipher(new BlowfishEngine());
-            blowfish2.Init(false, new KeyParameter(chunkEncryptionKey));
+            byte[] chunkEncryptionKey = DepadBytes(DecryptBytes(Encoding.UTF8.GetBytes(gameId), p_replay.PayloadHeader.EncryptionKey));
 
             // obtaining the decrypted chunk
-            byte[] decryptedChunk = blowfish2.ProcessBytes(m_data);
-
-            // padding length to remove
-            int paddingLength2 = Convert.ToInt32(decryptedChunk[decryptedChunk.Length - 1]);
-
-            // adjusted decrypted chunk
-            decryptedChunk = decryptedChunk.Take(decryptedChunk.Length - paddingLength2).ToArray();
+            byte[] decryptedChunk = DepadBytes(DecryptBytes(chunkEncryptionKey, m_data));
 
             return DecompressBytes(decryptedChunk);
+        }
+
+        /// <summary>
+        /// http://tools.ietf.org/html/rfc2898
+        /// </summary>
+        private byte[] DepadBytes(byte[] p_data)
+        {
+            int paddingLength = Convert.ToInt32(p_data[p_data.Length - 1]);
+
+            return p_data.Take(p_data.Length - paddingLength).ToArray();
+        }
+
+        private byte[] DecryptBytes(byte[] p_key, byte[] p_data)
+        {
+            BufferedBlockCipher cipher = new BufferedBlockCipher(new BlowfishEngine());
+
+            // init using the given key
+            cipher.Init(false, new KeyParameter(p_key));
+
+            // decrypt the given data
+            return cipher.ProcessBytes(p_data);
         }
 
         private byte[] DecompressBytes(byte[] p_data)
