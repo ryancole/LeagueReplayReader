@@ -9,8 +9,8 @@ namespace LeagueReplayReader.Types
         private string m_path;
         private FileStream m_stream;
         private ReplayHeader m_header;
-        private ReplayPayloadHeader m_payloadHeader;
         private ReplayPayloadEntry m_payloadEntry;
+        private ReplayPayloadHeader m_payloadHeader;
         private int m_currentEntry;
         private int m_entryDataOffset;
 
@@ -44,7 +44,7 @@ namespace LeagueReplayReader.Types
                 m_stream.Seek(m_header.PayloadOffset + (17 * m_currentEntry), SeekOrigin.Begin);
 
                 // read out the payload entry
-                m_payloadEntry = new ReplayPayloadEntry(m_stream, m_entryDataOffset);
+                m_payloadEntry = new ReplayPayloadEntry(this, m_stream, m_entryDataOffset);
 
                 // set the current entry index
                 m_currentEntry++;

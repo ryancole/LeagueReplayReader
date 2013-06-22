@@ -1,5 +1,5 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio Express 2012 for Windows Desktop
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeagueReplayReader", "LeagueReplayReader\LeagueReplayReader.csproj", "{ADEC8F95-2FEF-401D-9F57-89964D5E2D3E}"
 EndProject

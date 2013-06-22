@@ -28,7 +28,7 @@ namespace LeagueReplayReader.Types
 
         #region Methods
 
-        public ReplayPayloadEntry(FileStream p_stream, int p_payloadDataStartOffset)
+        public ReplayPayloadEntry(Replay p_replay, FileStream p_stream, int p_payloadDataStartOffset)
         {
             using (BinaryReader r = new BinaryReader(p_stream, Encoding.UTF8, true))
             {
@@ -47,9 +47,12 @@ namespace LeagueReplayReader.Types
 
             // the entry data chunk
             p_stream.Read(m_data, 0, m_length);
+
+            // store the decrypted data
+            m_data = GetDecryptedData(p_replay, m_data);
         }
 
-        public byte[] GetDecryptedData(Replay p_replay)
+        private byte[] GetDecryptedData(Replay p_replay, byte[] p_data)
         {
             // string represenation of the game id
             string gameId = Convert.ToString(p_replay.PayloadHeader.GameId);
@@ -58,7 +61,7 @@ namespace LeagueReplayReader.Types
             byte[] chunkEncryptionKey = DepadBytes(DecryptBytes(Encoding.UTF8.GetBytes(gameId), p_replay.PayloadHeader.EncryptionKey));
 
             // obtaining the decrypted chunk
-            byte[] decryptedChunk = DepadBytes(DecryptBytes(chunkEncryptionKey, m_data));
+            byte[] decryptedChunk = DepadBytes(DecryptBytes(chunkEncryptionKey, p_data));
 
             return DecompressBytes(decryptedChunk);
         }
@@ -119,6 +122,14 @@ namespace LeagueReplayReader.Types
         #endregion
 
         #region Properties
+
+        public byte[] Data
+        {
+            get
+            {
+                return m_data;
+            }
+        }
 
         public int ID
         {

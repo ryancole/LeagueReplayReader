@@ -8,37 +8,36 @@ namespace LeagueReplayReader
     {
         static void Main(string[] args)
         {
-            if (args.Length != 1)
+            if (args.Length != 2)
             {
-                Console.WriteLine("Args: <filepath>");
+                Console.WriteLine("Args: <source> <dest>");
                 return;
             }
 
-            string filepath = args[0];
+            string source = args[0];
+            string destination = args[1];
 
-            if (!File.Exists(filepath))
+            if (!File.Exists(source))
             {
-                Console.WriteLine("Error: file not found: {0}", filepath);
+                Console.WriteLine("Error: file not found: {0}", source);
                 return;
             }
 
-            // instanciate the replay file
-            Replay replay = new Replay(filepath);
+            if (!Directory.Exists(destination))
+            {
+                Directory.CreateDirectory(destination);
+            }
 
-            Console.WriteLine(replay);
-            Console.WriteLine(replay.Header);
-            Console.WriteLine(replay.Header.Metadata);
-            Console.WriteLine(replay.PayloadHeader);
+            // init the replay file
+            Replay replay = new Replay(source);
 
             // handle the entries within the replay file
             while (replay.ReadEntry())
             {
-                // decrypt and decompress the payload entry data
-                byte[] data = replay.PayloadEntry.GetDecryptedData(replay);
-
-                File.WriteAllBytes(string.Format(@"c:\users\ryan\desktop\foo\{0}_{1}.txt", replay.PayloadEntry.ID, replay.PayloadEntry.Type), data);
-
                 Console.WriteLine(replay.PayloadEntry);
+
+                // write the payload out to disk
+                File.WriteAllBytes(string.Format(@"{0}\{1}-{2}-{3}.bin", destination, replay.PayloadHeader.GameId, replay.PayloadEntry.ID, replay.PayloadEntry.Type), replay.PayloadEntry.Data);
             }
         }
     }
