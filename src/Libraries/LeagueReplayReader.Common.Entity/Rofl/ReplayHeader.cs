@@ -19,11 +19,14 @@ namespace LeagueReplayReader.Common.Entity.Rofl
                 // format version bytes (0x02 0x00 for ROFL2)
                 m_version = r.ReadBytes(2);
 
-                // skip 9 unknown header bytes (offsets 6-14) to reach the game version field
-                p_stream.Seek(9, SeekOrigin.Current);
+                // skip 8 unknown header bytes (offsets 6-13)
+                p_stream.Seek(8, SeekOrigin.Current);
 
-                // game version is a fixed 14-byte field starting at offset 15
-                m_gameVersion = Encoding.UTF8.GetString(r.ReadBytes(14)).TrimEnd('\0', '\x01');
+                // byte 14 is a length prefix for the game version string
+                byte gameVersionLength = r.ReadByte();
+
+                // read the version string using the length prefix
+                m_gameVersion = Encoding.UTF8.GetString(r.ReadBytes(gameVersionLength));
 
                 // metadata length is stored in the last 4 bytes of the file
                 p_stream.Seek(-4, SeekOrigin.End);
