@@ -1,53 +1,33 @@
-﻿using System;
 using System.IO;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace LeagueReplayReader.Common.Entity.Rofl
 {
-    [DataContract]
     public class ReplayMetadata
     {
-        private int m_gameId;
-
-        #region Methods
-
         public override string ToString()
         {
-            return string.Format("<ReplayMetadata gid={0}>", m_gameId);
+            return string.Format("<ReplayMetadata gameLength={0} lastChunk={1} lastKeyframe={2}>",
+                GameLength, LastGameChunkId, LastKeyframeId);
         }
-
-        #endregion
-
-        #region Static Functions
 
         public static ReplayMetadata Deserialize(byte[] p_json)
         {
-            using (MemoryStream m = new MemoryStream(p_json))
-            {
-                DataContractJsonSerializer s = new DataContractJsonSerializer(typeof(ReplayMetadata));
-                return (ReplayMetadata)s.ReadObject(m);
-            }
+            return JsonSerializer.Deserialize<ReplayMetadata>(p_json)
+                ?? throw new InvalidDataException("Failed to deserialize replay metadata");
         }
 
-        #endregion
+        [JsonPropertyName("gameLength")]
+        public ulong GameLength { get; set; }
 
-        #region Properties
+        [JsonPropertyName("lastGameChunkId")]
+        public uint LastGameChunkId { get; set; }
 
-        [DataMember]
-        public int gameId
-        {
-            get
-            {
-                return m_gameId;
-            }
+        [JsonPropertyName("lastKeyFrameId")]
+        public uint LastKeyframeId { get; set; }
 
-            set
-            {
-                m_gameId = value;
-            }
-        }
-
-        #endregion
+        [JsonPropertyName("statsJson")]
+        public string StatsJson { get; set; } = string.Empty;
     }
 }

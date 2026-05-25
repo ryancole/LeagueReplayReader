@@ -1,4 +1,4 @@
-﻿using LeagueReplayReader.Common.Entity.Rofl;
+using LeagueReplayReader.Common.Entity.Rofl;
 
 namespace LeagueReplayReader.Applications
 {
@@ -6,14 +6,13 @@ namespace LeagueReplayReader.Applications
     {
         static void Main(string[] args)
         {
-            if (args.Length != 2)
+            if (args.Length < 1)
             {
-                Console.WriteLine("Args: <source> <dest>");
+                Console.WriteLine("Args: <source>");
                 return;
             }
 
             string source = args[0];
-            string destination = args[1];
 
             if (!File.Exists(source))
             {
@@ -21,22 +20,15 @@ namespace LeagueReplayReader.Applications
                 return;
             }
 
-            if (!Directory.Exists(destination))
-            {
-                Directory.CreateDirectory(destination);
-            }
-
-            // init the replay file
             Replay replay = new Replay(source);
 
-            // handle the entries within the replay file
-            while (replay.ReadEntry())
-            {
-                Console.WriteLine(replay.PayloadEntry);
-
-                // write the payload out to disk
-                File.WriteAllBytes(string.Format(@"{0}\{1}-{2}-{3}.bin", destination, replay.PayloadHeader.GameId, replay.PayloadEntry.ID, replay.PayloadEntry.Type), replay.PayloadEntry.Data);
-            }
+            Console.WriteLine(replay);
+            Console.WriteLine(replay.Header);
+            Console.WriteLine(replay.Header.Metadata);
+            Console.WriteLine("Game version : {0}", replay.Header.GameVersion);
+            Console.WriteLine("Game length  : {0}ms", replay.Header.Metadata.GameLength);
+            Console.WriteLine("Last chunk   : {0}", replay.Header.Metadata.LastGameChunkId);
+            Console.WriteLine("Last keyframe: {0}", replay.Header.Metadata.LastKeyframeId);
         }
     }
 }
