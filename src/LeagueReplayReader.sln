@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeagueReplayReader", "Appli
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Applications", "Applications", "{CE8F22C2-DFDD-4F02-92B3-2CFC8231B330}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libraries", "Libraries", "{C48EDBDA-D011-4399-AD24-938C5D75D3C6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeagueReplayReader.Common.Entity", "Libraries\LeagueReplayReader.Common.Entity\LeagueReplayReader.Common.Entity.csproj", "{28795159-3E56-4F60-B313-A3BC468F0DC0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,11 +21,19 @@ Global
 		{ADEC8F95-2FEF-401D-9F57-89964D5E2D3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ADEC8F95-2FEF-401D-9F57-89964D5E2D3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ADEC8F95-2FEF-401D-9F57-89964D5E2D3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28795159-3E56-4F60-B313-A3BC468F0DC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28795159-3E56-4F60-B313-A3BC468F0DC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28795159-3E56-4F60-B313-A3BC468F0DC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28795159-3E56-4F60-B313-A3BC468F0DC0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{ADEC8F95-2FEF-401D-9F57-89964D5E2D3E} = {CE8F22C2-DFDD-4F02-92B3-2CFC8231B330}
+		{28795159-3E56-4F60-B313-A3BC468F0DC0} = {C48EDBDA-D011-4399-AD24-938C5D75D3C6}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {452BE6D0-E11F-4266-BEC4-4D1B9C2DD547}
 	EndGlobalSection
 EndGlobal

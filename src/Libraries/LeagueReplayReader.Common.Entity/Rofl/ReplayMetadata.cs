@@ -3,7 +3,7 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 
-namespace LeagueReplayReader.Types
+namespace LeagueReplayReader.Common.Entity.Rofl
 {
     [DataContract]
     public class ReplayMetadata

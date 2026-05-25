@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text;
 
-namespace LeagueReplayReader.Types
+namespace LeagueReplayReader.Common.Entity.Rofl
 {
     public class Replay
     {
