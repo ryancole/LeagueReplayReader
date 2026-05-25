@@ -25,10 +25,22 @@ namespace LeagueReplayReader.Applications
             Console.WriteLine(replay);
             Console.WriteLine(replay.Header);
             Console.WriteLine(replay.Header.Metadata);
+
             Console.WriteLine("Game version : {0}", replay.Header.GameVersion);
             Console.WriteLine("Game length  : {0}ms", replay.Header.Metadata.GameLength);
             Console.WriteLine("Last chunk   : {0}", replay.Header.Metadata.LastGameChunkId);
             Console.WriteLine("Last keyframe: {0}", replay.Header.Metadata.LastKeyframeId);
+
+            var players = PlayerStats.Deserialize(replay.Header.Metadata.StatsJson);
+
+            Console.WriteLine("Players      : {0}", players.Length);
+
+            foreach (var p in players)
+            {
+                Console.WriteLine("  {0}#{1} | {2}/{3}/{4} | Gold: {5}", p.RiotIdGameName, p.RiotIdTagLine, p.ChampionsKilled, p.Deaths, p.Assists, p.GoldEarned);
+            }
+
+            Console.ReadLine();
         }
     }
 }
