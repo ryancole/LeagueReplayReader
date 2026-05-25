@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libraries", "Libraries", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeagueReplayReader.Common.Entity", "Libraries\LeagueReplayReader.Common.Entity\LeagueReplayReader.Common.Entity.csproj", "{28795159-3E56-4F60-B313-A3BC468F0DC0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeagueReplayReader", "Applications\LeagueReplayReader\LeagueReplayReader.csproj", "{947E2957-502E-4CD1-B5DE-57DF61C546F2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParseReplayFile", "Applications\ParseReplayFile\ParseReplayFile.csproj", "{947E2957-502E-4CD1-B5DE-57DF61C546F2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
