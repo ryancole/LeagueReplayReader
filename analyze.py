@@ -303,6 +303,7 @@ def main():
     hexdump(data, 256)
 
     search_champion_ids(data, path)
+    search_known_stats(data, path)
     scan_uint16_preceded_by_zeros(data)
     find_repeating_gaps(data)
     float_scan(data)
