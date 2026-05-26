@@ -171,6 +171,103 @@ def find_repeating_gaps(data: bytes):
         print(f"    gap={gap:5d} (0x{gap:04X})  seen {count} times")
 
 
+def search_known_stats(data: bytes, bin_path: str):
+    """
+    Search for each player's known end-game stats as raw bytes.
+    Gold is the most distinctive (large, unique uint32).
+    Level, kills, deaths are smaller but useful for confirmation.
+    Best used against the LAST keyframe where values match the final stats.
+    """
+    import os, json
+    players_path = os.path.join(os.path.dirname(bin_path), "players.json")
+    if not os.path.exists(players_path):
+        print("  players.json not found — skipping")
+        return
+
+    with open(players_path) as f:
+        players = json.load(f)
+
+    print("\n=== Known end-game stats search ===")
+    print("  (Best run against the last keyframe)\n")
+
+    for p in players:
+        name = p.get("name", "?")
+        skin = p.get("skin", "?")
+        gold = p.get("goldEarned", -1)
+        spent = p.get("goldSpent", -1)
+        level = p.get("level", -1)
+        kills = p.get("kills", -1)
+        deaths = p.get("deaths", -1)
+        assists = p.get("assists", -1)
+        cs = p.get("minionsKilled", -1)
+
+        print(f"  {name} ({skin})")
+        print(f"    gold={gold}  spent={spent}  level={level}  "
+              f"kda={kills}/{deaths}/{assists}  cs={cs}")
+
+        # Gold earned — uint32 LE, most distinctive
+        if gold > 0:
+            hits = find_all(data, struct.pack("<I", gold))
+            if hits:
+                print(f"    goldEarned uint32 ({gold}): {len(hits)} hit(s)")
+                for off in hits[:5]:
+                    print(f"      [0x{off:05X}]  {context(data, off, 4, before=8, after=12)}")
+            else:
+                print(f"    goldEarned uint32 ({gold}): no matches")
+
+        # Gold spent — uint32 LE
+        if spent > 0:
+            hits = find_all(data, struct.pack("<I", spent))
+            if hits:
+                print(f"    goldSpent  uint32 ({spent}): {len(hits)} hit(s)")
+                for off in hits[:3]:
+                    print(f"      [0x{off:05X}]  {context(data, off, 4, before=8, after=12)}")
+
+        # Level — uint8 and uint16 LE (small so many false positives, show count only)
+        if 1 <= level <= 18:
+            hits8  = find_all(data, bytes([level]))
+            hits16 = find_all(data, struct.pack("<H", level))
+            print(f"    level uint8  ({level}): {len(hits8)} hit(s)  |  "
+                  f"uint16 ({level}): {len(hits16)} hit(s)")
+
+        # Kills / Deaths / Assists as uint8 and uint16
+        for label, val in [("kills", kills), ("deaths", deaths), ("assists", assists)]:
+            if val >= 0:
+                hits = find_all(data, struct.pack("<H", val))
+                print(f"    {label:7s} uint16 ({val:3d}): {len(hits):5d} hit(s)")
+
+        print()
+
+
+def scan_uint16_preceded_by_zeros(data: bytes):
+    """
+    Scan for every instance of 00 00 00 00 XX 00 where XX is non-zero.
+    Leona and Malzahar confirmed this is where champion IDs live.
+    This reveals what IDs actually appear in the file at that location,
+    including any champions whose DDragon IDs might be wrong.
+    """
+    print("\n=== Scan for pattern: 00 00 00 00 [id_lo] 00 ===")
+    id_offsets: dict[int, list[int]] = collections.defaultdict(list)
+
+    for i in range(len(data) - 5):
+        if (data[i]   == 0x00 and data[i+1] == 0x00 and
+            data[i+2] == 0x00 and data[i+3] == 0x00 and
+            data[i+4] != 0x00 and data[i+5] == 0x00):
+            id_val = data[i+4]
+            id_offsets[id_val].append(i + 4)   # offset of the ID byte itself
+
+    # Build reverse map for labelling
+    id_to_name = {v: k for k, v in CHAMPION_IDS.items()}
+
+    print(f"  Found {len(id_offsets)} distinct ID values at this pattern:")
+    for id_val in sorted(id_offsets):
+        name   = id_to_name.get(id_val, "???")
+        offs   = id_offsets[id_val]
+        preview = ", ".join(f"0x{o:X}" for o in offs[:10])
+        suffix  = " ..." if len(offs) > 10 else ""
+        print(f"    id=0x{id_val:02X} ({id_val:3d}) [{name:>14}]  {len(offs):3d} hit(s)  @ {preview}{suffix}")
+
+
 def float_scan(data: bytes, lo: float = 0.0, hi: float = 16000.0):
     """
     Scan for 4-byte IEEE 754 floats in a plausible game-coordinate range.
@@ -206,6 +303,7 @@ def main():
     hexdump(data, 256)
 
     search_champion_ids(data, path)
+    scan_uint16_preceded_by_zeros(data)
     find_repeating_gaps(data)
     float_scan(data)
 

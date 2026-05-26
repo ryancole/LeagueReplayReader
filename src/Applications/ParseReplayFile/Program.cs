@@ -197,6 +197,8 @@ namespace LeagueReplayReader.Applications
             }
         }
 
+        static int ParseInt(string? s) => int.TryParse(s, out int v) ? v : -1;
+
         static void SaveEntries(string roflPath, List<Rofl2PayloadEntry> chunks, List<Rofl2PayloadEntry> keyframes, PlayerStats[] players)
         {
             // Output folder: sibling of the .rofl file, named after it (without extension)
@@ -221,10 +223,18 @@ namespace LeagueReplayReader.Applications
             // Write players.json so analysis tools can use champion info without re-parsing the .rofl
             var playerRecords = players.Select(p => new
             {
-                name       = $"{p.RiotIdGameName}#{p.RiotIdTagLine}",
-                skin       = p.Skin,
-                team       = p.Team,
-                championId = p.Skin != null && ChampionIds.TryGetValue(p.Skin, out int id) ? id : -1,
+                name         = $"{p.RiotIdGameName}#{p.RiotIdTagLine}",
+                skin         = p.Skin,
+                team         = p.Team,
+                championId   = p.Skin != null && ChampionIds.TryGetValue(p.Skin, out int id) ? id : -1,
+                goldEarned   = ParseInt(p.GoldEarned),
+                goldSpent    = ParseInt(p.GoldSpent),
+                level        = ParseInt(p.Level),
+                kills        = ParseInt(p.ChampionsKilled),
+                deaths       = ParseInt(p.Deaths),
+                assists      = ParseInt(p.Assists),
+                minionsKilled = ParseInt(p.MinionsKilled),
+                exp          = ParseInt(p.Exp),
             });
             string playersJson = System.Text.Json.JsonSerializer.Serialize(playerRecords,
                 new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
