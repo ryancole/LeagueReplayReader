@@ -8,6 +8,8 @@ namespace LeagueReplayReader.Common.Entity.Rofl
         private byte[] m_version;
         private string m_gameVersion;
         private ReplayMetadata m_metadata;
+        private long m_payloadStartOffset;
+        private long m_metadataStartOffset;
 
         public ReplayHeader(FileStream p_stream)
         {
@@ -28,12 +30,16 @@ namespace LeagueReplayReader.Common.Entity.Rofl
                 // read the version string using the length prefix
                 m_gameVersion = Encoding.UTF8.GetString(r.ReadBytes(gameVersionLength));
 
+                // payload entries start right after the game version string
+                m_payloadStartOffset = p_stream.Position;
+
                 // metadata length is stored in the last 4 bytes of the file
                 p_stream.Seek(-4, SeekOrigin.End);
                 int metadataLength = r.ReadInt32();
 
                 // metadata JSON immediately precedes the length field
-                p_stream.Seek(-(metadataLength + 4), SeekOrigin.End);
+                m_metadataStartOffset = p_stream.Length - metadataLength - 4;
+                p_stream.Seek(m_metadataStartOffset, SeekOrigin.Begin);
                 m_metadata = ReplayMetadata.Deserialize(r.ReadBytes(metadataLength));
             }
         }
@@ -47,5 +53,7 @@ namespace LeagueReplayReader.Common.Entity.Rofl
         public byte[] Version => m_version;
         public string GameVersion => m_gameVersion;
         public ReplayMetadata Metadata => m_metadata;
+        public long PayloadStartOffset => m_payloadStartOffset;
+        public long MetadataStartOffset => m_metadataStartOffset;
     }
 }
