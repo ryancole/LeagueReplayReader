@@ -82,7 +82,37 @@ namespace LeagueReplayReader.Applications
                 TraceKeyframeBlocks(keyframes[0].Data, maxBlocks: 8);
             }
 
+            Console.WriteLine();
+            Console.WriteLine("Saving decompressed entries...");
+            SaveEntries(source, chunks, keyframes);
+
             Console.ReadLine();
+        }
+
+        static void SaveEntries(string roflPath, List<Rofl2PayloadEntry> chunks, List<Rofl2PayloadEntry> keyframes)
+        {
+            // Output folder: sibling of the .rofl file, named after it (without extension)
+            string outputDir = Path.Combine(
+                Path.GetDirectoryName(roflPath)!,
+                Path.GetFileNameWithoutExtension(roflPath));
+
+            Directory.CreateDirectory(outputDir);
+
+            foreach (var chunk in chunks)
+            {
+                string path = Path.Combine(outputDir, $"chunk_{chunk.Id:D4}.bin");
+                File.WriteAllBytes(path, chunk.Data);
+            }
+
+            foreach (var kf in keyframes)
+            {
+                string path = Path.Combine(outputDir, $"keyframe_{kf.Id:D4}.bin");
+                File.WriteAllBytes(path, kf.Data);
+            }
+
+            Console.WriteLine("  Output folder : {0}", outputDir);
+            Console.WriteLine("  Chunks saved  : {0}", chunks.Count);
+            Console.WriteLine("  Keyframes saved: {0}", keyframes.Count);
         }
 
         static void TraceKeyframeBlocks(byte[] data, int maxBlocks)
