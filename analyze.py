@@ -305,6 +305,103 @@ def search_tagged_champion_ids(data: bytes, bin_path: str):
             print(f"    [0x{off:05X}]  {context(data, off, 4, before=4, after=12)}")
 
 
+def stride_alignment_analysis(data: bytes, bin_path: str):
+    """
+    Teemo's champion ID (17 = uint16-LE 0x0011) appears at exactly 10 positions
+    with a consistent stride of ~5649 bytes — one per time-slice in the keyframe.
+
+    Given those 10 anchor positions, scan offsets [-800 .. +800] and report:
+      • CONSTANT  — same uint16 value in all 10 slices (static field)
+      • SMALL     — all 10 values have high byte 0x00 (entity IDs, small stats)
+      • +N*stride — values found ~N player-record-widths from the anchor
+
+    The "small" lines reveal what entity IDs or stats live at each relative
+    position, letting us identify the other 9 champions without knowing their IDs.
+    """
+    print("\n=== Stride alignment analysis  (anchor: Teemo ID=17, 10 slices) ===")
+
+    champs  = load_players(bin_path)
+    teemo_id = champs.get("Teemo", 17)
+    all_hits = find_all(data, struct.pack("<H", teemo_id))
+
+    # Keep the longest run where consecutive gap is 5000-6500 bytes
+    best: list[int] = []
+    run:  list[int] = []
+    for pos in all_hits:
+        if not run or 5000 <= pos - run[-1] <= 6500:
+            run.append(pos)
+        else:
+            if len(run) > len(best):
+                best = run
+            run = [pos]
+    if len(run) > len(best):
+        best = run
+    positions = best
+
+    n = len(positions)
+    if n < 5:
+        print(f"  Only {n} stride-consistent positions — skipping")
+        return
+
+    avg_stride = (positions[-1] - positions[0]) // (n - 1)
+    print(f"  {n} positions, avg stride {avg_stride} (0x{avg_stride:X}) bytes")
+    for i, p in enumerate(positions):
+        gap = positions[i] - positions[i-1] if i else 0
+        print(f"    slice {i+1:2d}  0x{p:05X}  (+{gap})")
+
+    # Estimate per-player-record size (stride / 10 players in the game)
+    per_player = avg_stride // len(champs)
+    print(f"\n  Estimated per-player record size: {per_player} bytes (stride / {len(champs)} players)\n")
+
+    WINDOW = min(800, avg_stride // 2)
+
+    print(f"  Scanning offsets [{-WINDOW}..+{WINDOW}] from anchor — showing 'small' and constant fields:")
+    print(f"  {'offset':>7}  {'values in each slice (uint16-LE)':60}  note")
+    print(f"  {'-------':>7}  {'-'*60}  ----")
+
+    id_to_name = {v: k for k, v in champs.items()}
+
+    for off in range(-WINDOW, WINDOW + 1):
+        vals = []
+        for pos in positions:
+            ap = pos + off
+            if 0 <= ap + 1 < len(data):
+                vals.append(struct.unpack_from("<H", data, ap)[0])
+        if len(vals) < n:
+            continue
+
+        distinct = set(vals)
+
+        # Classify
+        all_small = all(v <= 0x00FF for v in vals)          # high byte is 0
+        all_medium = all(v <= 0x01FF for v in vals)         # fits in ~9 bits
+        constant   = len(distinct) == 1
+
+        if not (all_small or all_medium or constant):
+            continue
+
+        # Build a note
+        note_parts = []
+        if constant:
+            note_parts.append("CONSTANT")
+        elif all_small:
+            note_parts.append("small(≤255)")
+        elif all_medium:
+            note_parts.append("medium(≤511)")
+
+        # Label any values that match known champion IDs or small stats
+        labels = []
+        for v in vals:
+            name = id_to_name.get(v, "")
+            labels.append(f"{name}({v})" if name else str(v))
+
+        vals_str = "[" + ", ".join(labels) + "]"
+        if off == 0:
+            note_parts.append("← anchor")
+
+        print(f"  {off:+7d}  {vals_str[:60]:60}  {', '.join(note_parts)}")
+
+
 def scan_uint16_preceded_by_zeros(data: bytes):
     """
     Scan for every instance of 00 00 00 00 XX 00 where XX is non-zero.
@@ -371,6 +468,7 @@ def main():
     search_champion_ids(data, path)
     search_tagged_champion_ids(data, path)
     search_known_stats(data, path)
+    stride_alignment_analysis(data, path)
     scan_uint16_preceded_by_zeros(data)
     find_repeating_gaps(data)
     float_scan(data)
