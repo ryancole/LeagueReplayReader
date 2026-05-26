@@ -174,8 +174,8 @@ def find_repeating_gaps(data: bytes):
 def search_known_stats(data: bytes, bin_path: str):
     """
     Search for each player's known end-game stats as raw bytes.
-    Gold is the most distinctive (large, unique uint32).
-    Level, kills, deaths are smaller but useful for confirmation.
+    Tries multiple encodings for gold (uint32, uint16, float).
+    Prints offsets + context whenever a stat has 5 or fewer hits (very useful).
     Best used against the LAST keyframe where values match the final stats.
     """
     import os, json
@@ -190,53 +190,119 @@ def search_known_stats(data: bytes, bin_path: str):
     print("\n=== Known end-game stats search ===")
     print("  (Best run against the last keyframe)\n")
 
+    def report_hits(label: str, hits: list[int], plen: int, max_show: int = 3):
+        """Print hit count; if <= 5 hits, also print offsets + context."""
+        if not hits:
+            print(f"    {label}: no matches")
+            return
+        offsets_str = ", ".join(f"0x{o:X}" for o in hits[:10])
+        suffix = " ..." if len(hits) > 10 else ""
+        print(f"    {label}: {len(hits)} hit(s) @ {offsets_str}{suffix}")
+        if len(hits) <= 5:
+            for off in hits[:max_show]:
+                print(f"      [0x{off:05X}]  {context(data, off, plen, before=8, after=12)}")
+
     for p in players:
-        name = p.get("name", "?")
-        skin = p.get("skin", "?")
-        gold = p.get("goldEarned", -1)
+        name  = p.get("name", "?")
+        skin  = p.get("skin", "?")
+        gold  = p.get("goldEarned", -1)
         spent = p.get("goldSpent", -1)
         level = p.get("level", -1)
         kills = p.get("kills", -1)
-        deaths = p.get("deaths", -1)
-        assists = p.get("assists", -1)
-        cs = p.get("minionsKilled", -1)
+        deaths   = p.get("deaths", -1)
+        assists  = p.get("assists", -1)
+        cs  = p.get("minionsKilled", -1)
+        exp = p.get("exp", -1)
 
         print(f"  {name} ({skin})")
         print(f"    gold={gold}  spent={spent}  level={level}  "
-              f"kda={kills}/{deaths}/{assists}  cs={cs}")
+              f"kda={kills}/{deaths}/{assists}  cs={cs}  exp={exp}")
 
-        # Gold earned — uint32 LE, most distinctive
+        # Gold earned — try uint32-LE, uint16-LE, and IEEE-754 float
         if gold > 0:
-            hits = find_all(data, struct.pack("<I", gold))
-            if hits:
-                print(f"    goldEarned uint32 ({gold}): {len(hits)} hit(s)")
-                for off in hits[:5]:
-                    print(f"      [0x{off:05X}]  {context(data, off, 4, before=8, after=12)}")
+            h32 = find_all(data, struct.pack("<I", gold))
+            h16 = find_all(data, struct.pack("<H", gold)) if gold <= 0xFFFF else []
+            hfl = find_all(data, struct.pack("<f", float(gold)))
+            if h32:
+                report_hits(f"goldEarned uint32-LE ({gold})", h32, 4)
+            elif h16:
+                report_hits(f"goldEarned uint16-LE ({gold})", h16, 2)
+            elif hfl:
+                report_hits(f"goldEarned float     ({gold})", hfl, 4)
             else:
-                print(f"    goldEarned uint32 ({gold}): no matches")
+                print(f"    goldEarned ({gold}): no matches as uint32-LE, uint16-LE, or float")
 
-        # Gold spent — uint32 LE
+        # Gold spent — same set of encodings
         if spent > 0:
-            hits = find_all(data, struct.pack("<I", spent))
-            if hits:
-                print(f"    goldSpent  uint32 ({spent}): {len(hits)} hit(s)")
-                for off in hits[:3]:
-                    print(f"      [0x{off:05X}]  {context(data, off, 4, before=8, after=12)}")
+            h32s = find_all(data, struct.pack("<I", spent))
+            h16s = find_all(data, struct.pack("<H", spent)) if spent <= 0xFFFF else []
+            hfls = find_all(data, struct.pack("<f", float(spent)))
+            if h32s:
+                report_hits(f"goldSpent  uint32-LE ({spent})", h32s, 4)
+            elif h16s:
+                report_hits(f"goldSpent  uint16-LE ({spent})", h16s, 2)
+            elif hfls:
+                report_hits(f"goldSpent  float     ({spent})", hfls, 4)
 
-        # Level — uint8 and uint16 LE (small so many false positives, show count only)
-        if 1 <= level <= 18:
-            hits8  = find_all(data, bytes([level]))
-            hits16 = find_all(data, struct.pack("<H", level))
-            print(f"    level uint8  ({level}): {len(hits8)} hit(s)  |  "
-                  f"uint16 ({level}): {len(hits16)} hit(s)")
+        # Exp — uint32-LE and uint16-LE
+        if exp > 0:
+            h32e = find_all(data, struct.pack("<I", exp))
+            h16e = find_all(data, struct.pack("<H", exp)) if exp <= 0xFFFF else []
+            if h32e:
+                report_hits(f"exp uint32-LE ({exp})", h32e, 4)
+            elif h16e:
+                report_hits(f"exp uint16-LE ({exp})", h16e, 2)
+            else:
+                print(f"    exp ({exp}): no matches as uint32-LE or uint16-LE")
 
-        # Kills / Deaths / Assists as uint8 and uint16
+        # Level — uint8 and uint16 (small value, many false positives; show counts + offsets if rare)
+        if 1 <= level <= 30:
+            h8l  = find_all(data, bytes([level]))
+            h16l = find_all(data, struct.pack("<H", level))
+            print(f"    level uint8 ({level}): {len(h8l)} hit(s)  |  uint16 ({level}): {len(h16l)} hit(s)")
+            if len(h16l) <= 5:
+                for off in h16l[:3]:
+                    print(f"      [0x{off:05X}]  {context(data, off, 2, before=8, after=12)}")
+
+        # CS (minionsKilled) — uint16-LE; distinctive for high-CS players
+        if cs >= 0:
+            hcs = find_all(data, struct.pack("<H", cs))
+            report_hits(f"cs uint16 ({cs})", hcs, 2)
+
+        # Kills / Deaths / Assists — uint16-LE; print offsets when hit count is low
         for label, val in [("kills", kills), ("deaths", deaths), ("assists", assists)]:
             if val >= 0:
                 hits = find_all(data, struct.pack("<H", val))
-                print(f"    {label:7s} uint16 ({val:3d}): {len(hits):5d} hit(s)")
+                if len(hits) <= 5:
+                    report_hits(f"{label:7s} uint16 ({val:3d})", hits, 2)
+                else:
+                    print(f"    {label:7s} uint16 ({val:3d}): {len(hits):5d} hit(s)")
 
         print()
+
+
+def search_tagged_champion_ids(data: bytes, bin_path: str):
+    """
+    Search for the pattern  F1 00 [champion_id uint16-LE]  which was observed
+    in keyframe_0036: Leona(89), Malzahar(90), Mordekaiser(82), Zilean(26) all
+    had  F1 00 [id_lo] [id_hi]  immediately before their champion-ID uint16.
+    Tag byte 0xF1 may be a field-type marker meaning "champion ID".
+    """
+    print("\n=== Tagged champion-ID search  (F1 00 [id uint16]) ===")
+    champs = load_players(bin_path)
+    id_to_name = {v: k for k, v in champs.items()}
+
+    for name, cid in sorted(champs.items(), key=lambda x: x[1]):
+        pattern = bytes([0xF1, 0x00]) + struct.pack("<H", cid)
+        hits = find_all(data, pattern)
+        if not hits:
+            continue
+        offsets_str = ", ".join(f"0x{o:X}" for o in hits[:10])
+        suffix = " ..." if len(hits) > 10 else ""
+        print(f"  {name} (ID {cid}): {len(hits)} hit(s)  @ {offsets_str}{suffix}")
+        for off in hits[:3]:
+            # Show 4 bytes before tag, the 4-byte pattern, and 12 bytes after
+            print(f"    [0x{off:05X}]  {context(data, off, 4, before=4, after=12)}")
 
 
 def scan_uint16_preceded_by_zeros(data: bytes):
@@ -303,6 +369,7 @@ def main():
     hexdump(data, 256)
 
     search_champion_ids(data, path)
+    search_tagged_champion_ids(data, path)
     search_known_stats(data, path)
     scan_uint16_preceded_by_zeros(data)
     find_repeating_gaps(data)
